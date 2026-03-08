@@ -22,6 +22,7 @@ let localServer = null;
 let bridge = null;
 let controlServer = null;
 let isPrimaryInstance = false;
+let promotionInFlight = null;
 
 function log(message, ...args) {
   console.error(`[construct-shader-graph-mcp] ${message}`, ...args);
@@ -706,7 +707,7 @@ function createProxyServer() {
   return server;
 }
 
-function callPrimaryTool(tool, input) {
+function callPrimaryToolDirect(tool, input) {
   return new Promise((resolve, reject) => {
     const socket = net.createConnection({
       host: "127.0.0.1",
@@ -749,6 +750,66 @@ function callPrimaryTool(tool, input) {
       input,
     });
   });
+}
+
+async function tryPromoteToPrimary() {
+  if (isPrimaryInstance) return true;
+
+  // Deduplicate concurrent promotion attempts
+  if (promotionInFlight) return promotionInFlight;
+
+  promotionInFlight = (async () => {
+    try {
+      await startPrimaryBackend();
+      log("promoted to primary instance");
+      return true;
+    } catch (err) {
+      if (err?.code === "EADDRINUSE") {
+        log("promotion failed: another primary appeared");
+      } else {
+        log("promotion failed:", err.message);
+      }
+      // Reset partial state
+      isPrimaryInstance = false;
+      localServer = null;
+      bridge = null;
+      controlServer = null;
+      return false;
+    } finally {
+      promotionInFlight = null;
+    }
+  })();
+
+  return promotionInFlight;
+}
+
+function executeToolLocally(toolName, input) {
+  const tool = createToolDefinitions().find((t) => t.name === toolName);
+  if (!tool) throw new Error(`Unknown tool '${toolName}'`);
+  return tool.handler(input || {});
+}
+
+async function callPrimaryTool(toolName, input) {
+  // If we're already promoted, go local
+  if (isPrimaryInstance) {
+    return executeToolLocally(toolName, input);
+  }
+
+  try {
+    return await callPrimaryToolDirect(toolName, input);
+  } catch (error) {
+    // If connection refused, the primary is gone — try to take over
+    if (error?.code === "ECONNREFUSED") {
+      log("primary unreachable, attempting promotion...");
+      const promoted = await tryPromoteToPrimary();
+      if (promoted) {
+        return executeToolLocally(toolName, input);
+      }
+      // Another primary appeared while we promoted — retry via proxy
+      return callPrimaryToolDirect(toolName, input);
+    }
+    throw error;
+  }
 }
 
 async function ensureBackend() {
