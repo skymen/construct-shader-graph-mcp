@@ -80,12 +80,26 @@ npm start
 Optional environment variable:
 
 - `MCP_BRIDGE_PORT` to change the browser bridge port from `6359`
+- `MCP_CONTROL_PORT` to change the internal local control port used for multi-host sharing
 
 Example:
 
 ```bash
 MCP_BRIDGE_PORT=6360 construct-shader-graph-mcp
 ```
+
+## Multiple MCP hosts
+
+This package supports multiple MCP clients on the same machine.
+
+- The first process becomes the primary backend and owns the browser bridge port.
+- Later processes detect the running backend and act as lightweight followers.
+- This allows tools like Claude Desktop and LM Studio to share the same live Construct Shader Graph connection.
+
+By default:
+
+- browser bridge: `6359`
+- local control port: `6360`
 
 ## How it works
 
