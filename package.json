@@ -1,0 +1,24 @@
+{
+  "name": "construct-shader-graph-mcp",
+  "version": "0.1.0",
+  "description": "Standalone MCP server for Construct Shader Graph",
+  "type": "module",
+  "bin": {
+    "construct-shader-graph-mcp": "./bin/construct-shader-graph-mcp.js"
+  },
+  "scripts": {
+    "start": "node ./bin/construct-shader-graph-mcp.js",
+    "dev": "node ./src/server.mjs"
+  },
+  "keywords": [
+    "mcp",
+    "construct",
+    "shader-graph"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "ws": "^8.19.0",
+    "zod": "^4.3.6"
+  }
+}
