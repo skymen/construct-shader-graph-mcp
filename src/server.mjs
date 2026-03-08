@@ -65,7 +65,7 @@ Use MCP tools only.
 ## Important method patterns
 
 - Discover node types: nodeTypes.search, nodeTypes.list, nodeTypes.get
-- Inspect graph: nodes.list, nodes.get, nodes.getPorts, wires.getAll, uniforms.list
+- Inspect graph: nodes.list, nodes.getInfo, nodes.getPorts, wires.getAll, uniforms.list
 - Edit node input values: nodes.edit(nodeId, { inputValues: { PortName: value } })
 - Wire nodes: wires.create({ from, to }) after inspecting both ports
 - Validate: ai.runDebugCheck({ includeScreenshot: true })

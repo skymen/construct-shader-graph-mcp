@@ -124,6 +124,7 @@ Read-only calls:
 - `getManifest`
 - `nodes.list`
 - `nodes.get`
+- `nodes.getInfo`
 - `nodes.getPorts`
 - `nodes.search`
 - `nodeTypes.list`
@@ -223,7 +224,7 @@ This is one of the most important workflows.
 
 To change a node's editable input values:
 
-1. Read the node with `nodes.get(nodeId)`.
+1. Read the node with `nodes.getInfo(nodeId)`.
 2. Inspect `editableInputValues` to see which inputs are editable and currently unconnected.
 3. Edit with `nodes.edit(nodeId, { inputValues: ... })`.
 
@@ -236,10 +237,10 @@ Rules:
 
 Example workflow:
 
-- call `nodes.get(nodeId)`
+- call `nodes.getInfo(nodeId)`
 - inspect `editableInputValues`
 - call `nodes.edit(nodeId, { inputValues: { B: [0, 0, 0, 1] } })`
-- re-read the node with `nodes.get(nodeId)`
+- re-read the node with `nodes.getInfo(nodeId)`
 
 Name-based example:
 
