@@ -318,7 +318,7 @@ function createToolDefinitions() {
         const response = await invokeSession(session, method, args);
         const result = {
           sessionId: session.sessionId,
-          project: session.project,
+          // project: session.project,
           method,
           args,
           durationMs: response.durationMs ?? 0,
