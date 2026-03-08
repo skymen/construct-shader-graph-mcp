@@ -3,19 +3,37 @@
   "version": "0.1.0",
   "description": "Standalone MCP server for Construct Shader Graph",
   "type": "module",
+  "files": [
+    "bin",
+    "src",
+    "README.md",
+    "caw-icon.png"
+  ],
   "bin": {
     "construct-shader-graph-mcp": "./bin/construct-shader-graph-mcp.js"
   },
   "scripts": {
     "start": "node ./bin/construct-shader-graph-mcp.js",
-    "dev": "node ./src/server.mjs"
+    "dev": "node ./src/server.mjs",
+    "pack:check": "npm pack --dry-run"
   },
   "keywords": [
     "mcp",
     "construct",
-    "shader-graph"
+    "shader-graph",
+    "claude",
+    "opencode"
   ],
+  "author": "skymen",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/skymen/construct-shader-graph-mcp.git"
+  },
+  "homepage": "https://github.com/skymen/construct-shader-graph-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/skymen/construct-shader-graph-mcp/issues"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",
     "ws": "^8.19.0",
