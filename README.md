@@ -8,6 +8,10 @@ Standalone MCP server for controlling Construct Shader Graph through its browser
 
 It exposes project discovery, manifest inspection, and exact method execution for the live app, while also bundling the guidance the model needs to work well with the tool.
 
+Construct Shader Graph is a visual editor for building Construct effect shaders as node graphs. You can find the app here:
+
+- `https://skymen.github.io/construct-shader-graph/`
+
 ## Features
 
 - MCP tools for project discovery and method execution
