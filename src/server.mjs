@@ -27,6 +27,53 @@ function loadSkillText() {
   return fs.readFileSync(SKILL_PATH, "utf8");
 }
 
+function loadQuickstartText() {
+  return `# Construct Shader Graph MCP Quickstart
+
+Use MCP tools only.
+
+## Core loop
+
+1. Call list_projects.
+2. Select the correct project with select_project.
+3. Read get_project_manifest if methods or arguments are unclear.
+4. Start the task with session.initAIWork.
+5. Inspect before mutating.
+6. Make one small edit at a time.
+7. Re-read affected nodes, ports, wires, or settings.
+8. Validate with shader.getGeneratedCode, preview.getErrors, and screenshots when needed.
+9. Finish with session.endAIWork.
+
+## Best practices
+
+- Use shader.getInfo metadata to identify the right project.
+- Use exact ids returned by the API.
+- Inspect ports before wiring.
+- Prefer editable input values before adding literal nodes.
+- Use nodeTypes.search or nodeTypes.list before guessing type keys.
+- Use variables when one output fans out to multiple distant places.
+
+## Important method patterns
+
+- Discover node types: nodeTypes.search, nodeTypes.list, nodeTypes.get
+- Inspect graph: nodes.list, nodes.get, nodes.getPorts, wires.getAll, uniforms.list
+- Edit node input values: nodes.edit(nodeId, { inputValues: { PortName: value } })
+- Wire nodes: wires.create({ from, to }) after inspecting both ports
+- Validate: ai.runDebugCheck({ includeScreenshot: true })
+`;
+}
+
+function getPromptPreamble() {
+  return [
+    "Use Construct Shader Graph through MCP only.",
+    "Start with list_projects and select_project.",
+    "Use shader.getInfo metadata to identify the right project.",
+    "Use get_project_manifest when capabilities or argument shapes are unclear.",
+    "Use exact return values from call_project_method instead of guessing state.",
+    "Inspect first, mutate second, and verify after each meaningful edit.",
+  ].join("\n");
+}
+
 function getSessionSummary(session) {
   return {
     sessionId: session.sessionId,
@@ -214,6 +261,132 @@ const server = new McpServer({
   name: "construct-shader-graph",
   version: "0.1.0",
 });
+
+server.registerResource(
+  "skill-guidance",
+  "construct-shader-graph://guidance/skill",
+  {
+    title: "Construct Shader Graph MCP Guidance",
+    description: "Full best-practices guidance for using Construct Shader Graph through MCP.",
+    mimeType: "text/markdown",
+  },
+  async (uri) => ({
+    contents: [
+      {
+        uri: uri.href,
+        mimeType: "text/markdown",
+        text: loadSkillText(),
+      },
+    ],
+  }),
+);
+
+server.registerResource(
+  "quickstart-guidance",
+  "construct-shader-graph://guidance/quickstart",
+  {
+    title: "Construct Shader Graph MCP Quickstart",
+    description: "Short workflow guidance for reliable MCP use.",
+    mimeType: "text/markdown",
+  },
+  async (uri) => ({
+    contents: [
+      {
+        uri: uri.href,
+        mimeType: "text/markdown",
+        text: loadQuickstartText(),
+      },
+    ],
+  }),
+);
+
+server.registerPrompt(
+  "work-with-shader-graph",
+  {
+    title: "Work With Shader Graph",
+    description: "General prompt for safely inspecting and editing a Construct Shader Graph project.",
+    argsSchema: z.object({
+      task: z.string().optional().describe("The user task to accomplish."),
+    }),
+  },
+  ({ task }) => ({
+    messages: [
+      {
+        role: "user",
+        content: {
+          type: "text",
+          text: `${getPromptPreamble()}\n\nFollow the full guidance resource if more detail is needed.\n\nTask: ${task || "Inspect the current project, understand its graph state, and proceed safely."}`,
+        },
+      },
+    ],
+  }),
+);
+
+server.registerPrompt(
+  "inspect-graph",
+  {
+    title: "Inspect Graph",
+    description: "Prompt for safely inspecting the current graph before any edits.",
+    argsSchema: z.object({
+      focus: z.string().optional().describe("Optional area to inspect, like uniforms, preview, or node types."),
+    }),
+  },
+  ({ focus }) => ({
+    messages: [
+      {
+        role: "user",
+        content: {
+          type: "text",
+          text: `${getPromptPreamble()}\n\nInspect the current graph without mutating it. Read nodes, wires, uniforms, shader info, and any relevant settings first. ${focus ? `Focus on: ${focus}.` : ""}`,
+        },
+      },
+    ],
+  }),
+);
+
+server.registerPrompt(
+  "edit-graph-safely",
+  {
+    title: "Edit Graph Safely",
+    description: "Prompt for making a small validated graph edit with MCP.",
+    argsSchema: z.object({
+      task: z.string().describe("The graph edit to perform."),
+    }),
+  },
+  ({ task }) => ({
+    messages: [
+      {
+        role: "user",
+        content: {
+          type: "text",
+          text: `${getPromptPreamble()}\n\nMake the smallest valid change that satisfies this task: ${task}\n\nBefore wiring, inspect ports. Before choosing a node type, use nodeTypes.search or nodeTypes.list. After each structural edit, re-read affected nodes or ports and validate preview/code if relevant.`,
+        },
+      },
+    ],
+  }),
+);
+
+server.registerPrompt(
+  "debug-preview-errors",
+  {
+    title: "Debug Preview Errors",
+    description: "Prompt for debugging generated code or preview issues in a shader graph project.",
+    argsSchema: z.object({
+      issue: z.string().optional().describe("Optional description of the observed preview issue."),
+    }),
+  },
+  ({ issue }) => ({
+    messages: [
+      {
+        role: "user",
+        content: {
+          type: "text",
+          text: `${getPromptPreamble()}\n\nDebug the current shader graph by inspecting shader.getGeneratedCode, preview.getErrors, preview settings, node preview, and ai.runDebugCheck. ${issue ? `Observed issue: ${issue}` : ""}`,
+        },
+      },
+    ],
+  }),
+);
 
 server.registerTool(
   "get_skill_guidance",

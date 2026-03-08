@@ -27,6 +27,18 @@ Construct Shader Graph is a visual editor for building Construct effect shaders 
 - `get_project_manifest`
 - `call_project_method`
 
+## MCP resources
+
+- `construct-shader-graph://guidance/skill`
+- `construct-shader-graph://guidance/quickstart`
+
+## MCP prompts
+
+- `work-with-shader-graph`
+- `inspect-graph`
+- `edit-graph-safely`
+- `debug-preview-errors`
+
 ## Install as a package
 
 Global install:
@@ -154,6 +166,11 @@ Global install example:
    - select the right project with `select_project`
    - inspect available methods with `get_project_manifest`
    - execute API calls with `call_project_method`
+
+For better AI guidance, the host can also:
+
+- read the built-in guidance resources
+- use the built-in workflow prompts for common tasks
 
 ## Publish notes
 

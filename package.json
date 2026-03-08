@@ -7,7 +7,7 @@
     "bin",
     "src",
     "README.md",
-    "caw-icon.png"
+    "caw-icon-512.png"
   ],
   "bin": {
     "construct-shader-graph-mcp": "./bin/construct-shader-graph-mcp.js"
