@@ -227,7 +227,9 @@ function createToolDefinitions() {
         description:
           "Choose which connected shader graph tab future MCP calls should target.",
         inputSchema: {
-          sessionId: z.string().describe("Session id returned by list_projects."),
+          sessionId: z
+            .string()
+            .describe("Session id returned by list_projects."),
         },
         outputSchema: {
           sessionId: z.string(),
@@ -291,7 +293,9 @@ function createToolDefinitions() {
             .describe("Optional session id; defaults to the selected project."),
           method: z
             .string()
-            .describe("Manifest method path, for example nodes.create or shader.getInfo."),
+            .describe(
+              "Manifest method path, for example nodes.create or shader.getInfo.",
+            ),
           args: z
             .array(z.any())
             .optional()
@@ -397,12 +401,15 @@ function registerPrompts(server) {
     "inspect-graph",
     {
       title: "Inspect Graph",
-      description: "Prompt for safely inspecting the current graph before any edits.",
+      description:
+        "Prompt for safely inspecting the current graph before any edits.",
       argsSchema: z.object({
         focus: z
           .string()
           .optional()
-          .describe("Optional area to inspect, like uniforms, preview, or node types."),
+          .describe(
+            "Optional area to inspect, like uniforms, preview, or node types.",
+          ),
       }),
     },
     ({ focus }) => ({
@@ -447,7 +454,10 @@ function registerPrompts(server) {
       description:
         "Prompt for debugging generated code or preview issues in a shader graph project.",
       argsSchema: z.object({
-        issue: z.string().optional().describe("Optional description of the observed preview issue."),
+        issue: z
+          .string()
+          .optional()
+          .describe("Optional description of the observed preview issue."),
       }),
     },
     ({ issue }) => ({
@@ -480,7 +490,6 @@ function createLocalServer() {
 }
 
 async function startPrimaryBackend() {
-  isPrimaryInstance = true;
   localServer = createLocalServer();
 
   bridge = new WebSocketServer({ noServer: true });
@@ -541,7 +550,9 @@ async function startPrimaryBackend() {
           selectedSessionId = sessionId;
         }
 
-        log(`registered ${sessionId} (${session.project?.name || "Untitled Shader"})`);
+        log(
+          `registered ${sessionId} (${session.project?.name || "Untitled Shader"})`,
+        );
         sendWsJson(socket, {
           type: "registered",
           sessionId,
@@ -631,9 +642,15 @@ async function startPrimaryBackend() {
         return;
       }
 
-      const tool = createToolDefinitions().find((entry) => entry.name === request.tool);
+      const tool = createToolDefinitions().find(
+        (entry) => entry.name === request.tool,
+      );
       if (!tool) {
-        sendJson(socket, { id: request.id, ok: false, error: `Unknown tool '${request.tool}'` });
+        sendJson(socket, {
+          id: request.id,
+          ok: false,
+          error: `Unknown tool '${request.tool}'`,
+        });
         return;
       }
 
@@ -650,14 +667,25 @@ async function startPrimaryBackend() {
     });
   });
 
-  await new Promise((resolve, reject) => {
-    controlServer.once("error", reject);
-    controlServer.listen(CONTROL_PORT, "127.0.0.1", () => {
-      controlServer.off("error", reject);
-      resolve();
+  try {
+    await new Promise((resolve, reject) => {
+      controlServer.once("error", reject);
+      controlServer.listen(CONTROL_PORT, "127.0.0.1", () => {
+        controlServer.off("error", reject);
+        resolve();
+      });
     });
-  });
+  } catch (err) {
+    httpServer.close();
+    bridge.close();
+    throw err;
+  }
 
+  // Permanent error handlers to prevent unhandled error crashes
+  httpServer.on("error", (err) => log("bridge http error:", err.message));
+  controlServer.on("error", (err) => log("control server error:", err.message));
+
+  isPrimaryInstance = true;
   log(`control listening on tcp://127.0.0.1:${CONTROL_PORT}`);
 }
 
@@ -680,7 +708,10 @@ function createProxyServer() {
 
 function callPrimaryTool(tool, input) {
   return new Promise((resolve, reject) => {
-    const socket = net.createConnection({ host: "127.0.0.1", port: CONTROL_PORT });
+    const socket = net.createConnection({
+      host: "127.0.0.1",
+      port: CONTROL_PORT,
+    });
     const requestId = `rpc_${Date.now()}_${Math.random().toString(16).slice(2)}`;
     const rl = readline.createInterface({ input: socket });
 
@@ -727,6 +758,12 @@ async function ensureBackend() {
     if (error?.code !== "EADDRINUSE") {
       throw error;
     }
+
+    // Clean up any partially created resources
+    isPrimaryInstance = false;
+    localServer = null;
+    bridge = null;
+    controlServer = null;
 
     log(`bridge already running on ${BRIDGE_PORT}; starting follower proxy`);
   }
