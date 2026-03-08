@@ -186,8 +186,8 @@ Side-effecting calls:
 When the model does not know which node type to use:
 
 - Prefer `nodeTypes.search(query)` to search by concept.
-- Use `nodeTypes.list()` to inspect all available node types.
-- Use `nodeTypes.get(typeKey)` to inspect one exact type before creating it.
+- Use `nodeTypes.list()` only for lightweight discovery of available names/categories/tags.
+- Use `nodeTypes.get(typeKey)` to inspect one exact type in full before creating it.
 - Use `nodes.search(query)` as a convenience alias for node type search.
 - Use `uniforms.getNodeTypes()` to discover generated uniform-backed node types.
 - Use `customNodes.list()` to discover reusable custom node definitions already in the project.
