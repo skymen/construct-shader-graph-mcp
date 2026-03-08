@@ -86,7 +86,7 @@ function getPromptPreamble() {
 function getSessionSummary(session) {
   return {
     sessionId: session.sessionId,
-    project: session.project,
+    projectName: session.project?.name || "Untitled Shader",
     connectedAt: session.connectedAt,
     updatedAt: session.updatedAt,
     manifestVersion: session.manifest?.version || null,
@@ -188,14 +188,7 @@ function createToolDefinitions() {
           projects: z.array(
             z.object({
               sessionId: z.string(),
-              project: z.object({
-                name: z.string(),
-                version: z.string().optional(),
-                author: z.string().optional(),
-                category: z.string().optional(),
-                description: z.string().optional(),
-                shaderInfo: z.any().optional(),
-              }),
+              projectName: z.string(),
               connectedAt: z.string(),
               updatedAt: z.string(),
               manifestVersion: z.string().nullable(),
@@ -234,7 +227,7 @@ function createToolDefinitions() {
         },
         outputSchema: {
           sessionId: z.string(),
-          project: z.any(),
+          projectName: z.string(),
         },
       },
       handler: async ({ sessionId }) => {
@@ -242,7 +235,7 @@ function createToolDefinitions() {
         selectedSessionId = sessionId;
         const result = {
           sessionId,
-          project: session.project,
+          projectName: session.project?.name || "Untitled Shader",
         };
         return {
           content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
@@ -263,7 +256,6 @@ function createToolDefinitions() {
         },
         outputSchema: {
           sessionId: z.string(),
-          project: z.any(),
           manifest: z.any(),
         },
       },
@@ -273,7 +265,6 @@ function createToolDefinitions() {
           : ensureSelectedSession();
         const result = {
           sessionId: session.sessionId,
-          project: session.project,
           manifest: session.manifest,
         };
         return {
@@ -304,7 +295,7 @@ function createToolDefinitions() {
         },
         outputSchema: {
           sessionId: z.string(),
-          project: z.any(),
+          // project: z.any(),
           method: z.string(),
           args: z.array(z.any()),
           durationMs: z.number(),
