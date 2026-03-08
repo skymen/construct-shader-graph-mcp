@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./caw-icon-512.png" alt="Construct Shader Graph MCP icon" width="96" height="96">
+  <img src="./caw-icon-512.png" alt="Construct Shader Graph MCP icon" width="128" height="128">
 </p>
 
 # Construct Shader Graph MCP
