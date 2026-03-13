@@ -1,6 +1,6 @@
 {
   "name": "construct-shader-graph-mcp",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Standalone MCP server for Construct Shader Graph",
   "type": "module",
   "files": [
