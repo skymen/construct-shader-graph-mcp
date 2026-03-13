@@ -33,7 +33,60 @@ function nowIso() {
 }
 
 function loadSkillText() {
-  return fs.readFileSync(SKILL_PATH, "utf8");
+  try {
+    return fs.readFileSync(SKILL_PATH, "utf8");
+  } catch {
+    return null;
+  }
+}
+
+async function fetchGuidanceFromApp() {
+  if (!selectedSessionId) {
+    return null;
+  }
+
+  const session = sessions.get(selectedSessionId);
+  if (!session) {
+    return null;
+  }
+
+  try {
+    const result = await invokeSession(session, "getGuidance", []);
+    if (result?.ok && result.result) {
+      return result.result;
+    }
+  } catch {
+    // Fall back to local file.
+  }
+
+  return null;
+}
+
+async function getSkillText() {
+  const appGuidance = await fetchGuidanceFromApp();
+  if (appGuidance?.skill) {
+    return appGuidance.skill;
+  }
+
+  return loadSkillText() || "No guidance available.";
+}
+
+async function getQuickstartText() {
+  const appGuidance = await fetchGuidanceFromApp();
+  if (appGuidance?.quickstart) {
+    return appGuidance.quickstart;
+  }
+
+  return loadQuickstartText();
+}
+
+async function getPromptPreambleText() {
+  const appGuidance = await fetchGuidanceFromApp();
+  if (appGuidance?.preamble) {
+    return appGuidance.preamble;
+  }
+
+  return getPromptPreamble();
 }
 
 function loadQuickstartText() {
@@ -170,7 +223,7 @@ function createToolDefinitions() {
       handler: async () => {
         const result = {
           title: "Construct Shader Graph MCP Guidance",
-          content: loadSkillText(),
+          content: await getSkillText(),
         };
         return {
           content: [{ type: "text", text: result.content }],
@@ -339,7 +392,7 @@ function registerResources(server) {
         {
           uri: uri.href,
           mimeType: "text/markdown",
-          text: loadSkillText(),
+          text: await getSkillText(),
         },
       ],
     }),
@@ -358,108 +411,7 @@ function registerResources(server) {
         {
           uri: uri.href,
           mimeType: "text/markdown",
-          text: loadQuickstartText(),
-        },
-      ],
-    }),
-  );
-}
-
-function registerPrompts(server) {
-  server.registerPrompt(
-    "work-with-shader-graph",
-    {
-      title: "Work With Shader Graph",
-      description:
-        "General prompt for safely inspecting and editing a Construct Shader Graph project.",
-      argsSchema: z.object({
-        task: z.string().optional().describe("The user task to accomplish."),
-      }),
-    },
-    ({ task }) => ({
-      messages: [
-        {
-          role: "user",
-          content: {
-            type: "text",
-            text: `${getPromptPreamble()}\n\nFollow the full guidance resource if more detail is needed.\n\nTask: ${task || "Inspect the current project, understand its graph state, and proceed safely."}`,
-          },
-        },
-      ],
-    }),
-  );
-
-  server.registerPrompt(
-    "inspect-graph",
-    {
-      title: "Inspect Graph",
-      description:
-        "Prompt for safely inspecting the current graph before any edits.",
-      argsSchema: z.object({
-        focus: z
-          .string()
-          .optional()
-          .describe(
-            "Optional area to inspect, like uniforms, preview, or node types.",
-          ),
-      }),
-    },
-    ({ focus }) => ({
-      messages: [
-        {
-          role: "user",
-          content: {
-            type: "text",
-            text: `${getPromptPreamble()}\n\nInspect the current graph without mutating it. Read nodes, wires, uniforms, shader info, and any relevant settings first. ${focus ? `Focus on: ${focus}.` : ""}`,
-          },
-        },
-      ],
-    }),
-  );
-
-  server.registerPrompt(
-    "edit-graph-safely",
-    {
-      title: "Edit Graph Safely",
-      description: "Prompt for making a small validated graph edit with MCP.",
-      argsSchema: z.object({
-        task: z.string().describe("The graph edit to perform."),
-      }),
-    },
-    ({ task }) => ({
-      messages: [
-        {
-          role: "user",
-          content: {
-            type: "text",
-            text: `${getPromptPreamble()}\n\nMake the smallest valid change that satisfies this task: ${task}\n\nBefore wiring, inspect ports. Before choosing a node type, use nodeTypes.search or nodeTypes.list. After each structural edit, re-read affected nodes or ports and validate preview/code if relevant.`,
-          },
-        },
-      ],
-    }),
-  );
-
-  server.registerPrompt(
-    "debug-preview-errors",
-    {
-      title: "Debug Preview Errors",
-      description:
-        "Prompt for debugging generated code or preview issues in a shader graph project.",
-      argsSchema: z.object({
-        issue: z
-          .string()
-          .optional()
-          .describe("Optional description of the observed preview issue."),
-      }),
-    },
-    ({ issue }) => ({
-      messages: [
-        {
-          role: "user",
-          content: {
-            type: "text",
-            text: `${getPromptPreamble()}\n\nDebug the current shader graph by inspecting shader.getGeneratedCode, preview.getErrors, preview settings, node preview, and ai.runDebugCheck. ${issue ? `Observed issue: ${issue}` : ""}`,
-          },
+          text: await getQuickstartText(),
         },
       ],
     }),
@@ -473,7 +425,6 @@ function createLocalServer() {
   });
 
   registerResources(server);
-  registerPrompts(server);
   createToolDefinitions().forEach((tool) => {
     server.registerTool(tool.name, tool.config, tool.handler);
   });
@@ -688,7 +639,6 @@ function createProxyServer() {
   });
 
   registerResources(server);
-  registerPrompts(server);
   createToolDefinitions().forEach((tool) => {
     server.registerTool(tool.name, tool.config, async (input = {}) => {
       return callPrimaryTool(tool.name, input);
